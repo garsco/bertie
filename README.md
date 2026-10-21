@@ -5,6 +5,7 @@
 For user review and further setup improvements in October 2026.
 
 To do ...
+
 2. Title on map view
 3. Additional direction data
 4. Store the code in GitHub rather than just the html output
