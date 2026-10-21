@@ -1,7 +1,7 @@
 
 # Bertie Time Trial Route mapping
 # load zipped shapefile, add extras and export as html file with leaflet
-# Gary, 26 March 2026 - 20 October 2026
+# Gary, 26 March 2026 - 22 October 2026
 
 ############################################################################## #
 # Load libraries ####
@@ -11,6 +11,8 @@ library(leaflet)
 library(leaflet.extras)
 library(leaflet.extras2)
 library(htmlwidgets)
+library(htmltools)
+
 
 
 ############################################################################## #
@@ -20,18 +22,9 @@ library(htmlwidgets)
 # If the zip contains multiple files, st_read usually finds the .shp automatically
 line_data <- st_read("/vsizip/C:/Garys_Laptop_Files/Allsorts/Bertie_Route/Bertie_Route_2026_shapefile.zip")
 
-
 # Ensure it is in the correct Coordinate Reference System for Leaflet (WGS84)
 line_data <- st_transform(line_data, 4326)
 
-
-# find extent of line
-# map <- map %>% 
-#  fitBounds(
-#    lng1 = as.numeric(st_bbox(line_data)$xmin), 
-#    lat1 = as.numeric(st_bbox(line_data)$ymin),
-#    lng2 = as.numeric(st_bbox(line_data)$xmax), 
-#    lat2 = as.numeric(st_bbox(line_data)$ymax))
 
 
 ############################################################################## #
@@ -44,74 +37,143 @@ map <- leaflet() %>%
   setView(lng = -2.694, lat = 56.227, zoom = 16) %>%
   
   # add text attribution to map
-#  addTiles(attribution = "Bertie Time Trial Route") %>%  # Adds a default OpenStreetMap background?
+  # addTiles(attribution = "Bertie Time Trial Route") %>%  # Adds a default OpenStreetMap background?
 
   # add map tile from providers
   addProviderTiles(providers$Esri.WorldStreetMap) %>%
   # addProviderTiles(providers$CartoDB.Positron) %>%
   # addProviderTiles(providers$OpenStreetMap) %>%
   
+  # Use JavaScript to style and centre text at the top of the map window
+  htmlwidgets::onRender("
+    function(el, x) {
+      // Create the title element
+      var titleDiv = document.createElement('div');
+      titleDiv.innerHTML = 'Allsorts Bertie Time Trial Route';
+      // Style it to be centered at the top, transparent, and modern
+      titleDiv.style.position = 'absolute';
+      titleDiv.style.top = '12px';
+      titleDiv.style.left = '50%';
+      titleDiv.style.transform = 'translateX(-50%)';
+      titleDiv.style.zIndex = '1000'; // Ensures it stays on top of the map tiles
+      titleDiv.style.fontSize = '20px';
+      titleDiv.style.fontWeight = 'bold';
+      titleDiv.style.color = '#333333';
+      titleDiv.style.backgroundColor = 'transparent';
+      titleDiv.style.pointerEvents = 'none'; // Allows clicks to pass through the title to the map
+      titleDiv.style.whiteSpace = 'nowrap';
+      // Append it directly to the map container
+      el.appendChild(titleDiv);
+    }
+  ") %>%
+
   # add additional text to the layout
   addControl(html = "Bertie Time Trial Route<br>
-             Start and finish at the same marker and follow the moving line<br>",
+             Start at the start and finish at the finish<br>
+             Follow the moving line<br>",
              position = "bottomleft") %>%
 
-    
-  leaflet.extras::addResetMapButton() %>%
   
-  # Add the Line with custom thickness and color
-  addPolylines(
-    data = line_data,
-    color = "royalblue",
-    weight = 5,          # Change this number for thickness
-    opacity = 0.8,
-    label = "My Route"   # Text that appears on hover
-  ) %>%
+  # # Add the Line with custom thickness and color
+  # addPolylines(
+  #   data = line_data,
+  #   color = "royalblue",
+  #   weight = 5,               # thickness
+  #   opacity = 0.8,
+  #   label = "My Route") %>%   # Hover text
   
-  # Add Markers with custom text
-  addMarkers(
+  
+  # Add text at a coordinate with no marker pin
+  addLabelOnlyMarkers(
     lng = -2.7030179, lat = 56.226950, 
-    popup = "<b>Start and Finish</b><br>This is where Bertie starts and finishes.") %>%
+    label = "Start and Finish",
+    labelOptions = labelOptions(
+      noHide = TRUE,          # Keeps the text permanently visible
+      direction = "center",   # Centers the text over the coordinates
+      textOnly = TRUE,        # Removes the white background card/bubble
+      style = list(
+        "font-weight" = "bold",
+        "font-size" = "16px",
+        "color" = "black"))) %>%     # Optional: gives the text a custom color
+      
+  # Add Marker with text for Fire Station
+  addMarkers(
+    lng = -2.6963861, lat = 56.225198,
+    label = "Fire Station", 
+    labelOptions = labelOptions(
+      direction = "right",        # Appears above the pin ('top', 'bottom', 'left', 'right')
+      textOnly = FALSE),        # FALSE = white popup box; TRUE = plain text floating on screen
+    popup = "Fire Station") %>%
   
-
-    # 1. The "Marching Ants" effect for the line
+    # Add Marker with text for Corner Shop
+  addMarkers(
+    lng = -2.6919905, lat = 56.224882, 
+    label = "Corner Shop", 
+    labelOptions = labelOptions(
+      direction = "bottom",       
+      textOnly = FALSE),
+    popup = "Corner Shop") %>%
+  
+  # Add Marker with text for Toll Road
+  addMarkers(
+    lng = -2.6927522, lat = 56.227348,
+    label = "Toll Road", 
+    labelOptions = labelOptions(
+      direction = "right",       
+      textOnly = FALSE),       
+    popup = "Toll Road") %>%
+  
+  # Add Marker with text for Cellardyke Church
+  addMarkers(
+    lng = -2.6901022, lat = 56.224259, 
+    label = "Cellardyke Church", 
+    labelOptions = labelOptions(
+      direction = "right",        
+      textOnly = FALSE),       
+    popup = "Cellardyke Church") %>%
+  
+  # Add Marker with text for Windmill Road Corner
+  addMarkers(
+    lng = -2.6898522, lat = 56.230912, 
+    label = "Windmill Road Corner", 
+    labelOptions = labelOptions(
+      direction = "top",        
+      textOnly = FALSE),       
+    popup = "Windmill Road Corner") %>%
+  
+  
+    # "Marching Ants" line effect
   leaflet.extras2::addAntpath(
     data = line_data,
     # Styling the line
     color = "blue",       # Dark blue/grey main line
     weight = 5,              # Thickness
     opacity = 0.9,
-    
-    # Interaction
     label = "This is the Bertie Route",
-    popup = "",
-    
+
     options = antpathOptions(
       delay = 2000,          # INCREASE this number to SLOW DOWN (e.g., 3000 or 4000)
-      reverse = FALSE,       # Change to TRUE if direction is wrong
+      reverse = TRUE,       # Change to TRUE if direction is wrong
       dashArray = c(10, 20)  # 10px dash, 15px gap
     )
-    
   ) %>%
 
-  
-  # 1. The "Pulsing marker" effect for the marker (does this do anything here?)
-  addPulseMarkers(lng = -0.12, lat = 51.50,
-                  label = "Start of Route",
+  # A "Pulsing marker" effect for the marker
+  addPulseMarkers(lng = -2.7030179, lat = 56.226950,
+                  label = "This is where the Bertie route starts and finishes",
                   icon = makePulseIcon(
                     color = "#00FF00",      # Green dot
-                    heartbeat = 0.5,        # Faster pulse
-                    iconSize = c(12,12))     # Small, discrete size
+                    heartbeat = 0.8,        # Faster pulse
+                    iconSize = c(22,22))     # Small, discrete size
   ) %>%
   
-
-    # 3. Add a mini map for context
-#  addMiniMap() %>%
+  # Add a map view reset button
+  leaflet.extras::addResetMapButton() %>%
   
-  # 4. Add a button to go fullscreen
-  addFullscreenControl() %>%
+  # Add a button to go fullscreen
+  leaflet.extras::addFullscreenControl() %>%
   
-  # 5. Add a scale bar
+  # Add a scale bar
   addScaleBar(position = "bottomleft")
 
 
@@ -123,16 +185,19 @@ map <- leaflet() %>%
 map
 
 
+
 ############################################################################## #
-# 4. Export as a standalone HTML file ####
+# 4. Export the leaflet map as a standalone HTML file ####
 ############################################################################## #
 
-saveWidget(map,
-           file = "bertie_time_trial_map.html",
-           title = "Bertie Time Trial Route",
-           selfcontained = TRUE)
+htmlwidgets::saveWidget(widget = map,
+                        file = "bertie_time_trial_map.html",
+                        title = "Bertie Time Trial Route",
+                        selfcontained = TRUE)
 
 
+
+# push to GitHub here as index.html?
 
 ############################################################################## #
 # Key Customization Tips ####
